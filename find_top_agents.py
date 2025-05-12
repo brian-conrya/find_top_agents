@@ -27,7 +27,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 # --- Configuration & Constants ---
-BANNED_KEYWORDS = {
+SKIPPED_KEYWORDS = {
     "zillow",
     "trulia",
     "redfin",
@@ -92,13 +92,16 @@ BANNED_KEYWORDS = {
     "ratemyagent",
     "sulekha",
     "bizjournals",
-    "/news/",
-    "/money/",
-    "/business/",
+    "news/",
+    "money/",
+    "business/",
+    "directory/",
     "seolium",
     "agentpronto",
     "upnest",
     "housecashin",
+    "land.com",
+    "rankmyagent.com",
 }
 AGENT_INDICATORS = [
     "realtor",
@@ -145,12 +148,12 @@ def make_session() -> requests.Session:
     return session
 
 
-def is_banned_url(url: str) -> bool:
-    """Return True if the URL should be ignored based on banned keywords or maps."""
+def is_skipped_url(url: str) -> bool:
+    """Return True if the URL should be ignored based on skipped keywords or maps."""
     u = url.lower()
     if GOOGLE_MAPS in u:
         return True
-    return any(keyword in u for keyword in BANNED_KEYWORDS)
+    return any(keyword in u for keyword in SKIPPED_KEYWORDS)
 
 
 def extract_meta_title(html: str) -> Optional[str]:
@@ -196,7 +199,7 @@ def fetch_agents_for_query(
     entries: Dict[str, AgentEntry] = {}
 
     for rank, url in enumerate(get_search_results(query, max_results), start=1):
-        if is_banned_url(url):
+        if is_skipped_url(url):
             continue
         try:
             resp = session.get(url, timeout=10)
