@@ -18,23 +18,29 @@ A command-line tool to find and rank the top real estate agents or teams in a sp
 
 1. Clone the repository:
 
-   git clone [https://github.com/brian-conrya/find\_top\_agents.git](https://github.com/brian-conrya/find_top_agents.git)
-   cd find\_top\_agents
+   ```
+   git clone https://github.com/brian-conrya/find\_top\_agents.git
+   cd find_top_agents
+   ```
 
 2. (Optional) Create and activate a virtual environment:
 
+   ```
    python3 -m venv env
    source env/bin/activate
+   ```
 
 3. Install dependencies:
 
+   ```
    pip install -r requirements.txt
+   ```
 
 ## Usage
 
 Run the script with the desired area and options:
 
-python find\_top\_agents.py "pittsburgh pa" -n 5 -r 50
+```python find_top_agents.py "pittsburgh pa" -n 5 -r 50```
 
 **Options:**
 
