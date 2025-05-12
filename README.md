@@ -19,7 +19,7 @@ A command-line tool to find and rank the top real estate agents or teams in a sp
 1. Clone the repository:
 
    ```
-   git clone https://github.com/brian-conrya/find\_top\_agents.git
+   git clone https://github.com/brian-conrya/find_top_agents.git
    cd find_top_agents
    ```
 
