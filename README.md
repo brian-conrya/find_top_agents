@@ -45,7 +45,7 @@ python find\_top\_agents.py "pittsburgh pa" -n 5 -r 50
 ### Example
 
 ```
-\$ python find\_top\_agents.py "pittsburgh" -n 1
+$ python find_top_agents.py "pittsburgh" -n 1
 INFO: Searching query: best realtors in pittsburgh
 INFO: Searching query: best real estate agents in pittsburgh
 INFO: Searching query: best real estate agents pittsburgh
@@ -54,9 +54,8 @@ INFO: Searching query: top realtors in pittsburgh
 INFO: Searching query: top real estate agents in pittsburgh
 INFO: Searching query: top real estate agents pittsburgh
 INFO: Searching query: top pittsburgh realtors
-
-Top 1 agents (lower total\_score is better):
+```
+Top 1 agents (lower total_score is better):
 
 1. Top Real Estate Agent in Pittsburgh | Tarasa Hurley Team — [https://www.tarasa.com/](https://www.tarasa.com/)
    total\_score=37, avg\_rank=4.62, best\_rank=3, worst\_rank=5, appearances=8/8
-```
