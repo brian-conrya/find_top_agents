@@ -110,13 +110,35 @@ SKIPPED_KEYWORDS = {
     "housecashin",
     "land.com",
     "rankmyagent.com",
+    "homes.com",
+    "visitpittsburgh",
 }
 AGENT_INDICATORS = [
     "realtor",
-    "real estate agent",
+    "agent",
     "team",
-    "realty",
-    "broker",
+    "group",
+    "associates",
+]
+NON_AGENT_PHRASES = [
+    "homes for sale",
+    "properties for sale",
+    "real estate listings",
+    "property search",
+    "mls search",
+    "the preferred realty",
+    "realty brokers",
+    "brokerage",
+    "board of realtors",
+    "association of realtors",
+    "realtors association",
+    "chamber of commerce",
+    "property management",
+    "apartments for rent",
+    "houses for rent",
+    "title company",
+    "mortgage",
+    "closing service",
 ]
 GOOGLE_MAPS = "google.com/maps"
 USER_AGENT = (
@@ -214,10 +236,19 @@ def extract_meta_title(html: str) -> Optional[str]:
     return None
 
 
-def looks_like_agent(title: str) -> bool:
-    """Return True if the title contains any agent/team indicator."""
-    lower = title.lower()
-    return any(indicator in lower for indicator in AGENT_INDICATORS)
+def looks_like_agent(title: str, url: str = "") -> bool:
+    """Return True if the title or domain looks like an agent or team, and not a brokerage/portal."""
+    lower_title = title.lower()
+    lower_url = url.lower()
+
+    # Reject non-agent phrases (brokerage offices, MLS feeds, search portals)
+    if any(phrase in lower_title for phrase in NON_AGENT_PHRASES):
+        return False
+
+    # Check for agent indicators in title or domain name
+    has_title_ind = any(indicator in lower_title for indicator in AGENT_INDICATORS)
+    has_url_ind = any(indicator in lower_url for indicator in ("team", "realtor", "agent"))
+    return has_title_ind or has_url_ind
 
 
 class SearchAuthError(Exception):
@@ -227,44 +258,54 @@ class SearchAuthError(Exception):
 
 def search_serper(query: str, num: int, api_key: str) -> List[Tuple[str, str]]:
     """
-    Search using Serper.dev Google SERP API.
+    Search using Serper.dev Google SERP API with pagination.
     Returns a list of (url, title) tuples.
     """
     headers = {
         "X-API-KEY": api_key,
         "Content-Type": "application/json",
     }
-    payload = {
-        "q": query,
-        "num": min(max(num, 10), 100),
-        "gl": "us",
-        "hl": "en",
-    }
-    try:
-        resp = requests.post(
-            "https://google.serper.dev/search",
-            headers=headers,
-            json=payload,
-            timeout=15,
-        )
-        if resp.status_code in (401, 403):
-            raise SearchAuthError(
-                f"Serper API authentication error (HTTP {resp.status_code}). Check your SERPER_API_KEY."
+    results: List[Tuple[str, str]] = []
+    # Serper returns 10 results per page via the 'page' parameter
+    pages_needed = (min(max(num, 1), 100) + 9) // 10
+
+    for page in range(1, pages_needed + 1):
+        payload = {
+            "q": query,
+            "page": page,
+            "gl": "us",
+            "hl": "en",
+        }
+        try:
+            resp = requests.post(
+                "https://google.serper.dev/search",
+                headers=headers,
+                json=payload,
+                timeout=15,
             )
-        resp.raise_for_status()
-        data = resp.json()
-        results = []
-        for item in data.get("organic", []):
-            link = item.get("link")
-            title = item.get("title", "")
-            if link:
-                results.append((link, title))
-        return results[:num]
-    except SearchAuthError:
-        raise
-    except Exception as e:
-        logger.error("Serper search failed for %r: %s", query, e)
-        return []
+            if resp.status_code in (401, 403):
+                raise SearchAuthError(
+                    f"Serper API authentication error (HTTP {resp.status_code}). Check your SERPER_API_KEY."
+                )
+            resp.raise_for_status()
+            data = resp.json()
+            items = data.get("organic", [])
+            if not items:
+                break
+            for item in items:
+                link = item.get("link")
+                title = item.get("title", "")
+                if link:
+                    results.append((link, title))
+            if len(items) < 10:
+                break
+        except SearchAuthError:
+            raise
+        except Exception as e:
+            logger.error("Serper search failed for %r (page %d): %s", query, page, e)
+            break
+
+    return results[:num]
 
 
 def search_google_cse(query: str, num: int, api_key: str, cse_id: str) -> List[Tuple[str, str]]:
@@ -375,7 +416,7 @@ def fetch_agents_for_query(
         if not title:
             title = serp_title
 
-        if not title or not looks_like_agent(title):
+        if not title or not looks_like_agent(title, url=url):
             continue
 
         key = title.lower()
